@@ -1,12 +1,12 @@
 import googlemaps
 from pprint import pprint
-from config import creds
+from location_data.config import creds
 import requests
 from datetime import datetime
 from datetime import date
 import sqlite3
 import os
-# from database import insert_place, insert_county, insert_reviews, connect_database
+# from database import insert_place, insert_county, insert_review, connect_database
 
 
 # class PlaceData:
@@ -201,23 +201,33 @@ def run_procedure(place, city, state):
 
     reviews =  google_reviews + yelp_reviews
 
-    # conn, cursor = connect_database('../db/location.db')
-    # insert_place(conn, cursor,place_metadata['id'], place_metadata['formatted_address'], place_metadata['name'], lat, lng, county, state)
+    # conn, cursor = connect_database('locations.db')
+    # cursor.execute(""" SELECT county_name, state FROM 
+    #     COUNTIES WHERE county_name=:county_name AND state=:state""",
+    #     {
+    #         'county_name': county,
+    #         'state': state
+    #     })
+    # if(len(cursor.fetchall()) == 0):
+    #     insert_county(conn, cursor, county, state, num_cases, num_deaths)
+
+    # insert_place(conn, cursor,place_metadata['place_id'], place_metadata['formatted_address'], place_metadata['name'], lat, lng, county, city, state)
+
     return {'num_cases': num_cases, 'num_deaths': num_deaths, 'reviews': reviews}
 
 
 
 if __name__ == "__main__":
-    place = 'Firo Pizza'
+    place = 'Hugs Cafe'
     city = 'Mckinney'
     state = 'Texas'
 
    
     data = run_procedure(place, city, state)
-    reviews = data['reviews']
+    # reviews = data['reviews']
 
-    for review in reviews:
-        print(review)
+    # for review in reviews:
+    #     print(review)
 
     # print(f'County: {county}')
     # print(f'number cases: {num_cases} ')

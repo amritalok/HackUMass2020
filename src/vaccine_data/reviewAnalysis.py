@@ -166,7 +166,19 @@ class ReviewAnalysis:
         return output
 
 
-
+    def calculateScore(self, VaccineSentiment, reviewsSentiment,cases, deaths, safetyGuideLines=True):
+        score=0
+        if VaccineSentiment=="Positive" or VaccineSentiment=="POSITIVE":
+            score+=1
+        if reviewsSentiment=="Positive" or reviewsSentiment=="POSITIVE":
+            score+=1
+        if safetyGuideLines:
+            score+=1
+        if cases<100:
+            score+=1
+        if deaths<1:
+            score+=1
+        return score
 
 
 if __name__ == "__main__":
