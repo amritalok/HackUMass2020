@@ -1,5 +1,0 @@
-["Great service and a good price!  I'll definitely be back!  Faith was very helpful and polite!", '']
-2
-County: Collin 
-number cases: 27553 
-number deaths: 261

@@ -4,6 +4,46 @@ from config import creds
 import requests
 from datetime import datetime
 from datetime import date
+import sqlite3
+import os
+# from database import insert_place, insert_county, insert_reviews, connect_database
+
+
+# class PlaceData:
+#     def __init__(self, place, city, state):
+#         self.place = place
+#         self.city = city
+#         self.state = state
+
+#         self.lat = None
+#         self.lng = None
+#         self.county = None
+#         self.state = None
+#         self.covid_cases = None
+#         self.covid_deaths = None
+#         self.reviews = None
+
+#         self.conn = None
+#         self.cursor = None
+    
+#     def connect_database():
+#         pass
+
+#     def insert_database(self):
+#         insert_place()
+#         insert_county()
+#         insert_reviews()
+
+#     def insert_place(self):
+#         pass
+
+#     def insert_county(self):
+#         pass
+
+#     def insert_reviews():
+#         pass
+
+
 
 
 def geo_information(gmaps, city, state):
@@ -12,10 +52,7 @@ def geo_information(gmaps, city, state):
     try:
         geocode_response = gmaps.geocode(address = city + ',' + state)[0]
     except:
-        
-        #TODO: write a descriptive error message 
-
-        pass
+        return 
     
     #you can loop through here to be more safe for area_level_2 
     address_components = geocode_response['address_components']
@@ -36,8 +73,9 @@ def covid_stats(county, state):
     state = state.strip()
     
     #default values 
-    num_cases = -1
-    num_deaths = -1
+    num_cases = None
+    num_deaths = None
+
     query_string = f'https://covidti.com/api/public/us/timeseries/{state}/{county}'
     response = requests.get(query_string)
 
@@ -69,21 +107,17 @@ def place_search(gmaps,search_query, lat, lng):
         language='en'
     )
 
-    # photos = place_info['candidates'][0]['photos'][0]['photo_reference']
-    # print(gmaps.places_photo(photo_reference = photos, max_width=200, max_height = 200))
-    # print(photos)
+    try:
+        return place_info['candidates'][0]
+    except IndexError:
+        return None
 
-
-    return place_info['candidates'][0]
-
-
-def extract_reviews(place_id):
+def extract_google_reviews(place_id):
     wextractor_api_key = creds.get_wextractor_key()
-    offset = 0 
+    offset = 0
     date_format = '%Y-%m-%d'
-    RECENCY_TRESHOLD = 50
+    RECENCY_TRESHOLD = 40
 
-    reviews_url = f'https://wextractor.com/api/v1/reviews?id={place_id}&auth_token={wextractor_api_key}&offset={offset}'
 
     current_date = date.today()
     within_last_month = True
@@ -91,6 +125,7 @@ def extract_reviews(place_id):
     recent_reviews = []
 
     while(within_last_month):
+        reviews_url = f'https://wextractor.com/api/v1/reviews?id={place_id}&auth_token={wextractor_api_key}&offset={offset}'
         response = requests.get(reviews_url)
         reviews = response.json()['reviews']
 
@@ -107,20 +142,69 @@ def extract_reviews(place_id):
                     within_last_month = False
                     break
             
-            offset+=10
+        offset+=10
     return recent_reviews
 
+def extract_yelp_reviews(name, address, lat, lng):
+    search_url='https://api.yelp.com/v3/businesses/search'
+    yelp_api_key = creds.get_yelp_key()
+
+    headers = {'Authorization': 'Bearer %s' % yelp_api_key}
+    params = {'term': name,'location': address, 'latitude': lat, 'longitude': lng, 'limit': 1}
+
+    response = requests.get(search_url, params=params, headers=headers)
+    if(response.status_code == 200):
+        try:
+            business_data = response.json()['businesses'][0]
+            if(business_data['name'] == name):
+                url = business_data['url']
+        except IndexError:
+            return None
+    
+    # plain url without any query parameters (passed into wextractor)
+    base_url = url.split('?')[0]
+    id = base_url.split('/')[-1]
+
+    offset = 0
+    wextractor_api_key = creds.get_wextractor_key()
+
+    # returns 20 reviews (default)
+    # TODO: get within the last month (if time)
+    wextractor_url = f'https://wextractor.com/api/v1/reviews/yelp?id={id}&auth_token={wextractor_api_key}&offset={offset}'
+
+    response = requests.get(wextractor_url)
+    reviews = response.json()['reviews']
+    yelp_reviews = []
+
+    if(len(reviews) > 0):
+        for review in reviews[:10]:
+            if(review['text']):
+                yelp_reviews.append(review['text'])
+    else:
+        return None
+
+    return yelp_reviews
 
 def run_procedure(place, city, state):
     API_KEY = creds.get_google_key()
     gmaps = googlemaps.Client(key=API_KEY)
     county, lat, lng = geo_information(gmaps, city, state).values()
     num_cases, num_deaths = covid_stats(county,state).values()
-    place_metadata = place_search(gmaps, place, lat, lng)
-    place_id = place_metadata['place_id']
 
-    reviews = extract_reviews(place_id)
-    return reviews
+    place_metadata = place_search(gmaps, place, lat, lng)
+    
+    if(place_metadata is not None):
+        place_id = place_metadata['place_id']
+        google_reviews = extract_google_reviews(place_id)
+
+    yelp_reviews = extract_yelp_reviews(place_metadata['name'], place_metadata['formatted_address'], lat, lng)
+
+    reviews =  google_reviews + yelp_reviews
+
+    # conn, cursor = connect_database('../db/location.db')
+    # insert_place(conn, cursor,place_metadata['id'], place_metadata['formatted_address'], place_metadata['name'], lat, lng, county, state)
+    return {'num_cases': num_cases, 'num_deaths': num_deaths, 'reviews': reviews}
+
 
 
 if __name__ == "__main__":
@@ -128,17 +212,14 @@ if __name__ == "__main__":
     city = 'Mckinney'
     state = 'Texas'
 
+   
+    data = run_procedure(place, city, state)
+    reviews = data['reviews']
 
-    API_KEY = creds.get_google_key()
-    gmaps = googlemaps.Client(key=API_KEY)
-    county, lat, lng = geo_information(gmaps, city, state).values()
-    num_cases, num_deaths = covid_stats(county,state).values()
-    place_metadata = place_search(gmaps, place, lat, lng)
-    place_id = place_metadata['place_id']
+    for review in reviews:
+        print(review)
 
-    extract_reviews(place_id)
-
-    print(f'County: {county}')
-    print(f'number cases: {num_cases} ')
-    print(f'number deaths: {num_deaths}')
+    # print(f'County: {county}')
+    # print(f'number cases: {num_cases} ')
+    # print(f'number deaths: {num_deaths}')
 
