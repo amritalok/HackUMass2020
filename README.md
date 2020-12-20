@@ -3,10 +3,13 @@
 
 Use FLASK
 --------------------------------------
-GET Rest API: no pramater required
-state:?
-Positive sentiment count = ?
-Negative sentiment count = ?
+GET Rest API: http://127.0.0.1:5000/search?state=TN
+Gives the output as:
+{
+  POSITIVE:COUNT,
+  NEGATIVE:COUNT
+}
+
 ---------------------------------------
 Get REST API: 
 parameter: Pass the State as a parameter
