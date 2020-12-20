@@ -12,8 +12,5 @@ Gives the output as:
 
 ---------------------------------------
 Get REST API: 
-parameter: Pass the State as a parameter
-if Someone click on the state:
-state:
-
+http://127.0.0.1:5000/summarize?place=Firo&city=McKinney&state=Texas
 Use React to display the US Map as hyperlink for each state:
