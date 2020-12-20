@@ -108,22 +108,19 @@ def extract_reviews(place_id):
                     break
             
             offset+=10
-    print(recent_reviews)
-    for review in recent_reviews:
-        print(review)
-    print(len(recent_reviews))
-
-    # while(within_last_month):
-    #     response = requests.get(reviews_url)
-    #     reviews = response.json()['reviews']
-
-    #     if(len(reviews)>0):
-    #         for review in reviews:
-    #             # compare dates 
+    return recent_reviews
 
 
-    #TODO: get entire month's worth of reviews
+def run_procedure(place, city, state):
+    API_KEY = creds.get_google_key()
+    gmaps = googlemaps.Client(key=API_KEY)
+    county, lat, lng = geo_information(gmaps, city, state).values()
+    num_cases, num_deaths = covid_stats(county,state).values()
+    place_metadata = place_search(gmaps, place, lat, lng)
+    place_id = place_metadata['place_id']
 
+    reviews = extract_reviews(place_id)
+    return reviews
 
 
 if __name__ == "__main__":
