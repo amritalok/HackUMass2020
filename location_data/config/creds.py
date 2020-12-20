@@ -21,3 +21,6 @@ def get_wextractor_key():
 
 def get_yelp_key():
     return os.environ['YELP_API_KEY']
+
+
+print(get_google_key())

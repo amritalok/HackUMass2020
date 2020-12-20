@@ -1,3 +1,4 @@
+from googlemaps.places import find_place
 import googlemaps
 from pprint import pprint
 from location_data.config import creds
@@ -190,7 +191,6 @@ def run_procedure(place, city, state):
     gmaps = googlemaps.Client(key=API_KEY)
     county, lat, lng = geo_information(gmaps, city, state).values()
     num_cases, num_deaths = covid_stats(county,state).values()
-
     place_metadata = place_search(gmaps, place, lat, lng)
     
     if(place_metadata is not None):
@@ -224,6 +224,7 @@ if __name__ == "__main__":
 
    
     data = run_procedure(place, city, state)
+    print(data['reviews'])
     # reviews = data['reviews']
 
     # for review in reviews:
